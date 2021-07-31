@@ -1,5 +1,5 @@
 
-def create_fastapi_routes(backends, oauth, handle_authorize):
+def create_fastapi_routes(backends, oauth, handle_authorize, handle_state = None):
     """Create a Fastapi routes that you can register it directly to fastapi
     app. The routes contains two route: ``/auth/<backend>`` and
     ``/login/<backend>``::
@@ -18,7 +18,13 @@ def create_fastapi_routes(backends, oauth, handle_authorize):
 
         app.add_middleware(SessionMiddleware, secret_key=config.get("SECRET_KEY"))
 
+        async def handle_state(request):
+            return request.query_params.get("next", None)
+
         async def handle_authorize(remote, token, user_info, request):
+            next = request.query_params.get("state", None)
+            if next:
+                return RedirectResponse(next) # redirect to frontend
             return user_info
 
         router = create_fastapi_routes([GitHub, Google], oauth, handle_authorize)
@@ -80,6 +86,8 @@ def create_fastapi_routes(backends, oauth, handle_authorize):
         redirect_uri = request.url_for("auth", backend=backend)
         conf_key = "{}_AUTHORIZE_PARAMS".format(backend.upper())
         params = oauth.config.get(conf_key, default={})
+        if handle_state:
+            params["state"] = handle_state(request)
         return await remote.authorize_redirect(request, redirect_uri, **params)
 
     return router
