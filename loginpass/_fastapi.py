@@ -94,9 +94,9 @@ def create_fastapi_routes(backends, oauth, handle_authorize, handle_state = None
 
 
 def register_to(oauth, backend_cls):
-    from authlib.integrations.starlette_client import StarletteRemoteApp
+    from authlib.integrations.starlette_client import StarletteOAuth2App
 
-    class RemoteApp(backend_cls, StarletteRemoteApp):
+    class RemoteApp(backend_cls, StarletteOAuth2App):
         OAUTH_APP_CONFIG = backend_cls.OAUTH_CONFIG
 
     oauth.register(RemoteApp.NAME, overwrite=True, client_cls=RemoteApp)
